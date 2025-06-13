@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qbox & QBCore Vehicle Exporter/Importer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root {
+      --bg-primary: #121212; --bg-secondary: #1e1e1e; --bg-tertiary: #2a2a2e;
+      --text-primary: #e0e0e0; --text-secondary: #b3b3b3; --accent: #0d6efd;
+      --accent-hover: #3b82f6; --border-color: #3a3a3a; --shadow-color: rgba(0, 0, 0, 0.4);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0; background: var(--bg-primary); color: var(--text-primary); line-height: 1.6;
+    }
+    header {
+      background: var(--bg-secondary); color: white; padding: 1.25em 2em;
+      border-bottom: 1px solid var(--border-color); text-align: center;
+    }
+    header h1 {
+      margin: 0; font-size: 26px; font-weight: 600; text-shadow: 0 0 8px rgba(13, 110, 253, 0.3);
+      display: inline-flex; align-items: center; gap: 0.6em;
+    }
+    main { padding: 2em; }
+    .card {
+      background: var(--bg-secondary); border-radius: 12px; padding: 2.5em;
+      box-shadow: 0 8px 32px var(--shadow-color); max-width: 950px;
+      margin: auto; border: 1px solid var(--border-color);
+    }
+    .card p { color: var(--text-secondary); font-size: 16px; margin-top: 0; }
+    .actions {
+      margin-bottom: 1.5em; display: flex; flex-wrap: wrap;
+      gap: 15px; align-items: center;
+    }
+    button, select {
+      border: 1px solid var(--accent); color: white; padding: 12px 20px;
+      font-size: 16px; font-weight: 500; border-radius: 8px; cursor: pointer;
+      transition: all 0.2s ease; outline: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.75em;
+    }
+    button { background-color: var(--accent); }
+    button:hover { background-color: var(--accent-hover); }
+    button:active { transform: scale(0.98); }
+    button.secondary { background-color: var(--bg-tertiary); border-color: var(--border-color); }
+    button.secondary:hover { background-color: #3c3c41; }
+    select {
+      background-color: var(--bg-tertiary); -webkit-appearance: none; -moz-appearance: none;
+      appearance: none; background-repeat: no-repeat; background-position: right 1rem center;
+      background-size: 1em; padding-right: 3rem; border-color: var(--border-color);
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    }
+    select:hover { border-color: var(--accent-hover); }
+    
+    .tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); margin-top: 1.5em; }
+    .tab-btn {
+      padding: 10px 20px; border: none; background: none; color: var(--text-secondary);
+      cursor: pointer; font-size: 16px; border-radius: 6px 6px 0 0;
+      border-bottom: 3px solid transparent; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; gap: 0.5em;
+    }
+    .tab-btn.active { color: var(--text-primary); background: var(--bg-tertiary); border-bottom: 3px solid var(--accent); }
+    .tab-content { display: none; padding-top: 1.5em; }
+    .tab-content.active { display: block; }
+    
+    textarea {
+      width: 100%; height: 450px; padding: 15px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 14px;
+      background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);
+      border-radius: 8px; resize: vertical;
+    }
+    .table-container { max-height: 450px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
+    thead th { background-color: var(--bg-tertiary); position: sticky; top: 0; color: var(--text-primary); }
+    tbody tr:hover { background-color: #2c2c31; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fa-solid fa-car-side"></i> Araç Dışa & İçe Aktarıcı</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <p>Klasör tarayarak veya mevcut `vehicles.lua` dosyasını içe aktararak QBCore/QBX için araç listeleri oluşturun ve düzenleyin.</p>
+      <div class="actions">
+        <select id="format">
+          <option value="qbx">QBox (QBX)</option>
+          <option value="qbcore">QBCore (Yeni)</option>
+        </select>
+        <button id="select-folder"><i class="fa-solid fa-folder-open"></i> Klasör Tara</button>
+        <button id="import-file" class="secondary"><i class="fa-solid fa-file-import"></i> `vehicles.lua` İçe Aktar</button>
+        <button id="export-file"><i class="fa-solid fa-file-export"></i> Dışa Aktar</button>
+      </div>
+      
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="lua-view"><i class="fa-solid fa-code"></i> Lua Kodu</button>
+        <button class="tab-btn" data-tab="table-view"><i class="fa-solid fa-table-list"></i> Tablo Görünümü</button>
+      </div>
+
+      <div id="lua-view" class="tab-content active">
+        <textarea id="output" placeholder="Oluşturulan Lua içeriği burada görünecektir..."></textarea>
+      </div>
+      <div id="table-view" class="tab-content">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>İsim</th>
+                <th>Marka</th>
+                <th>Kategori</th>
+                <th>Fiyat</th>
+              </tr>
+            </thead>
+            <tbody id="vehicle-table-body">
+              <!-- Veriler buraya dinamik olarak eklenecek -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ----- STATE MANAGEMENT -----
+    let vehicleData = [];
+
+    // ----- UI ELEMENTS -----
+    const formatSelect = document.getElementById("format");
+    const outputTextarea = document.getElementById("output");
+    const tableBody = document.getElementById("vehicle-table-body");
+    
+    // ----- CORE LOGIC -----
+    function parseLuaString(content) {
+        const vehicles = [];
+        let cleanContent = content.trim().replace(/^(QBShared\.Vehicles|return)\s*=\s*{/s, '').replace(/}\s*$/s, '');
+        
+        // Ana araç bloklarını yakala (örn: ['futo'] = { ... } veya futo = { ... })
+        const vehicleBlockRegex = /(?:\[['"]([^\]'"]+)['"]\]|([a-zA-Z0-9_]+))\s*=\s*\{([\s\S]*?)\}(?=,?\s*(?:\[['"]|$))/g;
+        let match;
+
+        while ((match = vehicleBlockRegex.exec(cleanContent)) !== null) {
+            const model = match[1] || match[2];
+            const properties = match[3];
+            const vehicle = { model: model.trim() };
+
+            // Hem ['key'] hem de key formatını yakalayan DÜZELTİLMİŞ Regex
+            const propRegex = /(?:\[['"]([^\]'"]+)['"]\]|(\w+))\s*=\s*(?:['"`](.*?)['"`]|(true|false|nil|-?\d+\.?\d*))/g;
+            let propMatch;
+            while ((propMatch = propRegex.exec(properties)) !== null) {
+                const key = propMatch[1] || propMatch[2]; // ['key'] veya key formatı
+                const stringValue = propMatch[3];
+                const otherValue = propMatch[4];
+                const value = stringValue !== undefined ? stringValue : (isNaN(parseFloat(otherValue)) ? otherValue : parseFloat(otherValue));
+                vehicle[key.trim()] = value;
+            }
+            vehicles.push(vehicle);
+        }
+        return vehicles;
+    }
+
+    // ----- RENDER FUNCTIONS -----
+    function renderAll() {
+        renderLuaOutput();
+        renderTable();
+    }
+
+    function renderLuaOutput() {
+        const format = formatSelect.value;
+        let output = format === 'qbcore' ? "QBShared.Vehicles = {\n\n" : "return {\n\n";
+
+        for (const vehicle of vehicleData) {
+            const luaKey = format === 'qbcore' ? `['${vehicle.model}']` : safeLuaKey(vehicle.model);
+
+            if (format === 'qbcore') {
+                output += `    ${luaKey} = {\n`;
+                output += `        ['name'] = '${vehicle.name || "N/A"}',\n`;
+                output += `        ['brand'] = '${vehicle.brand || "N/A"}',\n`;
+                output += `        ['model'] = '${vehicle.model}',\n`;
+                output += `        ['price'] = ${vehicle.price || 100000},\n`;
+                output += `        ['category'] = '${vehicle.category || "MODLU"}',\n`;
+                output += `        ['categoryLabel'] = '${vehicle.categoryLabel || "Modlu Araçlar"}',\n`;
+                output += `        ['hash'] = \`${vehicle.model}\`,\n`;
+                output += `        ['shop'] = '${vehicle.shop || "pdm"}',\n`;
+                output += `    },\n\n`;
+            } else { // QBX
+                output += `    ${luaKey} = {\n`;
+                output += `        name = '${vehicle.name || "N/A"}',\n`;
+                output += `        brand = '${vehicle.brand || "N/A"}',\n`;
+                output += `        model = '${vehicle.model}',\n`;
+                output += `        price = ${vehicle.price || 100000},\n`;
+                output += `        category = '${vehicle.category || "addon"}',\n`;
+                output += `        type = '${vehicle.type || "automobile"}',\n`;
+                output += `        hash = \`${vehicle.model}\`,\n`;
+                output += `    },\n\n`;
+            }
+        }
+        output += "}";
+        outputTextarea.value = output;
+    }
+
+    function renderTable() {
+        tableBody.innerHTML = '';
+        if (vehicleData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-secondary);">Görüntülenecek veri yok. Klasör tarayın veya bir dosya içe aktarın.</td></tr>`;
+            return;
+        }
+        for (const vehicle of vehicleData) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${vehicle.model || 'N/A'}</td>
+                <td>${vehicle.name || 'N/A'}</td>
+                <td>${vehicle.brand || 'N/A'}</td>
+                <td>${vehicle.category || 'N/A'}</td>
+                <td>${(vehicle.price || 0).toLocaleString('tr-TR')}</td>
+            `;
+            tableBody.appendChild(row);
+        }
+    }
+
+    // ----- UTILITY FUNCTIONS -----
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+    
+    function safeLuaKey(key) {
+      return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) ? key : `['${key}']`;
+    }
+
+    async function collectVehicleMeta(dirHandle) {
+        const collected = [];
+        async function recurse(handle) {
+            for await (const [name, entry] of handle.entries()) {
+                if (entry.kind === 'directory' && name.toLowerCase() !== 'stream') await recurse(entry);
+                else if (entry.kind === 'file' && ['vehicle.meta', 'vehicles.meta'].includes(name.toLowerCase())) collected.push(await entry.getFile());
+            }
+        }
+        await recurse(dirHandle);
+        return collected;
+    }
+    
+    // ----- EVENT LISTENERS -----
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTable(); // Initial empty state
+
+        document.getElementById("select-folder").addEventListener("click", async () => {
+            try {
+                const dirHandle = await window.showDirectoryPicker();
+                const metaFiles = await collectVehicleMeta(dirHandle);
+                if (metaFiles.length === 0) {
+                    alert(`❌ '${dirHandle.name}' klasöründe veya alt klasörlerinde 'vehicle.meta' dosyası bulunamadı.`);
+                    return;
+                }
+                const newData = [];
+                for (const file of metaFiles) {
+                    const text = await file.text();
+                    const modelMatch = text.match(/<modelName>(.*?)<\/modelName>/);
+                    const brandMatch = text.match(/<vehicleMakeName>(.*?)<\/vehicleMakeName>/);
+                    if (modelMatch) {
+                        const model = modelMatch[1];
+                        const brand = brandMatch ? capitalize(brandMatch[1]) : "MODLU";
+                        newData.push({ model: model, brand: brand, name: capitalize(brand) + " " + capitalize(model), price: 100000, category: formatSelect.value === 'qbx' ? 'addon' : 'MODLU' });
+                    }
+                }
+                vehicleData = newData;
+                renderAll();
+                alert(`✅ '${dirHandle.name}' klasöründen ${vehicleData.length} araç başarıyla işlendi!`);
+            } catch (e) {
+                if (e.name !== 'AbortError') { alert("Hata: " + e.message); console.error(e); }
+            }
+        });
+        
+        document.getElementById("import-file").addEventListener("click", async () => {
+            try {
+                const [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'Lua Files', accept: { 'application/lua': ['.lua'], 'text/plain': ['.lua'] } }] });
+                const file = await fileHandle.getFile();
+                const content = await file.text();
+                const parsedData = parseLuaString(content);
+                if(parsedData.length === 0) {
+                    alert('❌ Dosya okundu ancak uyumlu formatta araç verisi bulunamadı.');
+                    return;
+                }
+                vehicleData = parsedData;
+                renderAll();
+                alert(`✅ '${file.name}' dosyasından ${vehicleData.length} araç başarıyla içe aktarıldı!`);
+            } catch (e) {
+                if (e.name !== 'AbortError') { alert("Hata: " + e.message); console.error(e); }
+            }
+        });
+        
+        document.getElementById("export-file").addEventListener("click", () => {
+            if (vehicleData.length === 0) {
+                alert("⚠️ Dışa aktarılacak içerik yok.");
+                return;
+            }
+            const blob = new Blob([outputTextarea.value], { type: "application/lua" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "vehicles.lua";
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+        });
+        
+        formatSelect.addEventListener("change", () => {
+            if (vehicleData.length > 0) renderAll();
+        });
+
+        document.querySelectorAll(".tab-btn").forEach(button => {
+            button.addEventListener("click", () => {
+                document.querySelectorAll(".tab-btn, .tab-content").forEach(el => el.classList.remove("active"));
+                button.classList.add("active");
+                document.getElementById(button.dataset.tab).classList.add("active");
+            });
+        });
+    });
+  </script>
+</body>
+</html>
